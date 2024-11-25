@@ -1,0 +1,23 @@
+【下载】
+wget https://github.com/citusdata/citus/archive/refs/tags/v12.1.4.tar.gz
+
+【安装依赖包】
+sudo dnf -y install lz4-devel epel-release libzstd-devel autoconf automake libtool libcurl-devel curl-devel
+
+【编译安装源码】##使用root安装
+/root/soft/citus/citus-12.1.4:
+mkdir build && cd build
+../configure PG_CONFIG=/usr/local/pgsql-16.5/bin/pg_config LDFLAGS="-L/usr/lib64" CPPFLAGS="-I/usr/include"
+make
+make install
+
+【赋权】
+chown -R postgres:postgres /dbv/pgsql-data-16.5/extension
+chown -R postgres:postgres /usr/local/pgsql-16.5/include/server/{distributed,citus_version.h}
+
+###############################################################################################
+CREATE USER ucitus with SUPERUSER LOGIN REPLICATION ENCRYPTED PASSWORD 'db';
+create database citusdb with OWNER = ucitus ENCODING=UTF8;
+
+psql -U ucitus citusdb
+
