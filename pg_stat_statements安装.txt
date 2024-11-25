@@ -1,0 +1,41 @@
+【执行配置项】#否则无法执行pg_stat_statements路径下的make 编译
+/home/postgres/soft/postgresql-16.5/
+./configure \
+--prefix=/usr/local/pgsql-16.5 \
+--datadir=/dbv/pgsql-data-16.5 \
+--with-pgport=5432 \
+--without-zlib \
+--with-systemd \
+--with-openssl \
+--without-python
+
+make -j 8
+不需要  make install
+
+切换到源码pg_stat_statements 路径
+cd /home/postgres/soft/postgresql-16.5/contrib/pg_stat_statements
+make -j 8 && make install
+##########################################################################
+psql> create extension pg_stat_statements;
+
+##########################################################################
+
+# data/postgresql.conf中，进行配置：
+
+shared_preload_libraries = 'pg_stat_statements'
+
+pg_stat_statements.max = 1000
+
+pg_stat_statements.track = all
+
+shared_preload_libraries = 'pg_stat_statements'，表示要在启动时导入pg_stat_statements 动态库。
+pg_stat_statements.max = 1000，表示监控的语句最多为1000句。
+pg_stat_statements.track = top，表示不监控嵌套的sql语句。
+pg_stat_statements.track_utility = true，表示对 INSERT/UPDATE/DELETE/SELECT 之外的sql动作也作监控。
+pg_stat_statements.save = true，表示当postgresql停止时，把信息存入磁盘文件以备下次启动时再使用。
+
+
+SELECT query, calls, total_exec_time, (total_exec_time/calls) as average ,rows,
+100.0 * shared_blks_hit /nullif(shared_blks_hit + shared_blks_read, 0) AS hit_percent
+FROM pg_stat_statements
+ORDER BY average DESC LIMIT 1;
