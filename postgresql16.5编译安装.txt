@@ -1,0 +1,63 @@
+groupadd -g 5001 postgres
+useradd -g postgres -u 5001 postgres
+echo "db"|passwd --stdin postgres
+
+mkdir -p /dbv/{pgsql-data-16.5,pgsql-log-16.5,pgsql-arch-16.5}
+mkdir -p /usr/local/pgsql-16.5
+
+chown -R postgres:postgres /dbv/{pgsql-data-16.5,pgsql-log-16.5,pgsql-arch-16.5}
+chown -R postgres:postgres /usr/local/pgsql-16.5
+
+dnf install -y make gcc bison gcc gcc-c++ readline \
+            readline-devel zlib zlib-devel systemd-devel libicu-devel icu openssl openssl-devel
+            
+mkdir -p /root/soft/postgresql-16.5/build  
+cd /root/soft/postgresql-16.5/build 
+
+../configure \
+--prefix=/usr/local/pgsql-16.5 \
+--datadir=/dbv/pgsql-data-16.5 \
+--with-pgport=5432 \
+--without-zlib \
+--with-systemd \
+--with-openssl \
+--without-python
+
+
+#编译的时候，注意数据路径--datadir，要与initdb 的数据路径一致，
+#否在初始化时，会报错
+make -j 8 && make install
+
+--------------------------------------------------------
+export  PGHOME=/usr/local/pgsql-16.5
+export  PGDATA=/dbv/pgsql-data-16.5/data
+export  PGHOST=localhost                   
+export  PGPORT=5432
+export  PATH=$PATH:$PGHOME/bin
+export  PG_CONFIG=/usr/local/pgsql-16.5/bin/pg_config
+export  LD_LIBRARY_PATH=/usr/local/pgsql/lib:$LD_LIBRARY_PATH
+
+su - postgres
+/usr/local/pgsql-16.5/bin/initdb --encoding=UTF-8 -D /dbv/pgsql-data-16.5/data -U postgres
+/usr/local/pgsql-16.5/bin/pg_ctl -D /dbv/pgsql-data-16.5/data -l /dbv/pgsql-log-16.5/server.log start
+/usr/local/pgsql-16.5/bin/pg_ctl -D /dbv/pgsql-data-16.5/data -l /dbv/pgsql-log-16.5/server.log log
+
+
+
+.bashrc:
+alias pstart='/usr/local/pgsql-16.5/bin/pg_ctl -D /dbv/pgsql-data-16.5/data -l /dbv/pgsql-log-16.5/server.log start'
+alias pstop='/usr/local/pgsql-16.5/bin/pg_ctl -D /dbv/pgsql-data-16.5/data -l /dbv/pgsql-log-16.5/server.log stop'
+alias preload='/usr/local/pgsql-16.5/bin/pg_ctl -D /dbv/pgsql-data-16.5/data -l /dbv/pgsql-log-16.5/server.log reload'
+alias pstatus='/usr/local/pgsql-16.5/bin/pg_ctl -D /dbv/pgsql-data-16.5/data -l /dbv/pgsql-log-16.5/server.log status'
+
+alias cdb='cd /dbv'
+alias cdh='cd /dbv/pgsql-data-16.5/'
+alias cdd='cd /dbv/pgsql-data-16.5/data'
+alias cdi='cd /usr/local/pgsql-16.5'
+
+
+
+
+
+
+
